@@ -6,9 +6,7 @@
 #set -x
 set -o pipefail
 set -o errtrace
-## style-ok: no-strict -- this script deliberately uses MANUAL error handling (trap
-## error_handler_rads) instead of 'set -o errexit'/'nounset'; it references unset variables
-## (e.g. $rads_debug) and tolerant commands by design, so enabling strict mode would break it.
+## style-ok: no-strict -- this script deliberately uses MANUAL error handling.
 
 error_handler_rads() {
    echo "[${red}${bold}ERROR${reset}] \
@@ -218,27 +216,17 @@ configuration folder.)"
       fi
    fi
 
-   ## No GPU / DRM device: a WAYLAND compositor (labwc, started via greetd -- the only supported
-   ## Wayland greeter) cannot create a backend without a DRM device and would spam 'Found 0 GPUs,
-   ## cannot create backend' / 'Failed to open any DRM device' in the journal, then fail. On a
-   ## GPU-less boot (a server, or a VM with no virtual GPU) skip the graphical session.
-   ##
-   ## This gate applies ONLY to the greetd/Wayland path. An X11 display manager (lightdm, xdm,
-   ## nodm, ...) can drive Xorg on the vesa/fbdev fallback with NO /dev/dri (e.g. a 'nomodeset'
-   ## boot), so gating it on a DRM node would wrongly skip a usable Xorg desktop -- do not.
-   ##
-   ## A DRM driver can bind a few seconds INTO boot (proprietary nvidia-drm, a modular
-   ## virtio-gpu/i915 on slow storage), and this oneshot runs early, so a single instantaneous
-   ## glob would false-negative on real GPU hardware. Wait briefly ('rads_gpu_wait_seconds', a
-   ## per-second poll) for a card node to appear before concluding headless. 'nullglob' (set
-   ## above) makes the unmatched glob expand to nothing; the '[ -e ]' guard is a belt-and-braces
-   ## fallback if a sourced config toggled nullglob off.
+   ## labwc cannot start without a /dev/dri/card* device. It's our only
+   ## supported Wayland compositor, and greetd is our only supported Wayland
+   ## greeter, so if greetd is in use, poll for a GPU and skip the graphical
+   ## session if one can't be found in time. (X11 can start without a GPU, so
+   ## it doesn't need this restriction.)
    if [ "$rads_display_manager" = "greetd" ] && [ ! "$rads_skip_gpu_test" = "1" ]; then
       gpu_present="0"
       gpu_waited="0"
       while true; do
          for drm_card in /dev/dri/card[0-9]* ; do
-            if [ -e "$drm_card" ]; then
+            if [ -c "$drm_card" ]; then
                gpu_present="1"
                break
             fi
@@ -251,9 +239,9 @@ configuration folder.)"
       done
       if [ "$gpu_present" = "0" ]; then
          echo "[${green}INFO${reset}] Not starting display manager (Wayland greeter \
-'$rads_display_manager'), because no GPU / DRM device (/dev/dri/card*) appeared within \
-${rads_gpu_wait_seconds}s. A Wayland compositor needs one; this is expected on a headless or \
-GPU-less boot. (Override with rads_skip_gpu_test=1 in /etc/rads.d/ configuration folder.)"
+'$rads_display_manager'), because no GPU (/dev/dri/card*) appeared within \
+${rads_gpu_wait_seconds}s. This is expected on a headless boot. (Override \
+with rads_skip_gpu_test=1 in /etc/rads.d/ configuration folder.)"
          create_status_file_no_start_dm
          exit 0
       fi
