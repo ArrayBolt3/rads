@@ -1,3 +1,22 @@
+commit 5981f442fdb32716e26225c87ccdd15ee1a729f3
+Merge: 2b18c3f fe55eca
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Mon Aug 10 09:25:28 2026 -0400
+
+    Merge remote-tracking branch 'refs/remotes/ArrayBolt3/arraybolt3/trixie'
+
+commit fe55eca22f7f90f4958b4e001d4cdb4c68cf60d3
+Author: Aaron Rainbolt <arraybolt3@gmail.com>
+Date:   Sat Aug 8 22:50:45 2026 -0400
+
+    Shorten comments and messaging, require /dev/dri/card* to be a character special device
+
+commit 2b18c3f635473d191d7e9ec0caeb3f09860863aa
+Author: Patrick Schleizer <adrelanos@whonix.org>
+Date:   Tue Jul 21 11:07:24 2026 +0000
+
+    bumped changelog version
+
 commit 7bb2b9625b2f952b717bba140ac97fd6d4af5c55
 Merge: 6e04425 fbbfccb
 Author: Patrick Schleizer <adrelanos@whonix.org>
